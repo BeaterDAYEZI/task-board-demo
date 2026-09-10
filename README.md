@@ -55,7 +55,7 @@ npm run dev
 - [x] 演示版开发（任务 / 周进度 / 看板 / 报表 / Excel 导入导出 / 移动端适配）
 - [x] 导入部门任务清单（68 项任务、逐周进展）
 - [x] 数据源拆分：真实数据本地使用 / 脱敏数据用于公开演示
-- [ ] GitHub Pages 演示部署 ← 当前
+- [x] GitHub Pages 演示部署（脱敏演示版）：https://beaterdayezi.github.io/task-board-demo/
 - [ ] 正式版（后端 + 数据库 + 云服务器部署）
 - [ ] 公司统一账号 SSO 集成
 
