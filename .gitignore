@@ -1,0 +1,22 @@
+# 依赖与构建产物
+frontend/node_modules/
+frontend/dist/
+
+# npm 本地缓存
+frontend/.npm-cache/
+
+# 数据转换中间文件（可通过 scripts 重新生成）
+frontend/scripts/output.json
+frontend/scripts/report.json
+
+# 系统与日志文件
+*.log
+.committmp
+Thumbs.db
+.DS_Store
+
+# 真实数据与本地环境（不提交、不发布）
+*.real.json
+.env.local
+frontend/scripts/mask-seed.cjs
+publish.cjs
