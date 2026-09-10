@@ -1,5 +1,11 @@
 # 版本记录
 
+## v0.3（2026-09-10）
+
+- 建立 GitHub 公开演示版（脱敏数据）：推送后自动构建部署，访问 https://beaterdayezi.github.io/task-board-demo/
+- 数据源拆分：本地使用真实数据（`frontend/.env.local`），公开构建自动使用脱敏演示数据；发布流程含敏感信息校验
+- 部署工作流支持自动启用 GitHub Pages（configure-pages）
+
 ## v0.2-demo（2026-09-10）
 
 演示版功能完善：
