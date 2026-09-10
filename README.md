@@ -42,11 +42,11 @@ npm run dev
 
 > 数据说明：公开仓库内置**脱敏演示数据**（虚构人员与任务，供演示 / 展示）；本地使用真实数据时，在 `frontend/.env.local` 中设置 `VITE_SEED=real`（`.env.local` 与 `*.real.json` 均不会被提交 / 发布）。
 
-## 部署到 GitHub Pages（给领导演示）
+## 演示站点（GitHub Pages 自动部署）
 
-1. 将代码推送到 GitHub 仓库的 `main` 分支
-2. 仓库 Settings → Pages → Build and deployment → Source 选择 **GitHub Actions**
-3. 推送后自动构建部署，访问 `https://<用户名>.github.io/<仓库名>/`
+- 站点地址：https://beaterdayezi.github.io/task-board-demo/
+- 部署方式：推送到 `main` 分支后由 GitHub Actions 自动构建部署（工作流见 `.github/workflows/deploy.yml`）
+- 首次部署前需在仓库 Settings → Pages → Source 选择 **GitHub Actions**（本仓库已配置）
 
 ## 项目状态
 
