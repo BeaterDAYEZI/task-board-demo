@@ -11,6 +11,7 @@ const routes = [
       { path: 'workbench', component: () => import('../views/WorkbenchView.vue'), meta: { title: '我的工作台' } },
       { path: 'tasks', component: () => import('../views/TaskListView.vue'), meta: { title: '任务列表' } },
       { path: 'tasks/:id', component: () => import('../views/TaskDetailView.vue'), meta: { title: '任务详情' } },
+      { path: 'files', component: () => import('../views/DocumentView.vue'), meta: { title: '文件传阅' } },
       { path: 'board', component: () => import('../views/BoardView.vue'), meta: { title: '总览看板' } },
       { path: 'report', component: () => import('../views/ReportView.vue'), meta: { title: '统计报表' } },
       { path: 'settings', component: () => import('../views/SettingsView.vue'), meta: { title: '设置', admin: true } }

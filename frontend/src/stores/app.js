@@ -2,8 +2,8 @@ import { defineStore } from 'pinia'
 import { uid, weekKey } from '../utils/core'
 import { buildSeed } from '../utils/seed'
 
-// v2：切换为《部门重点工作任务清单》导入数据
-const LS_KEY = 'yxny-task-board-v2'
+// v3：新增文件传阅（下发 / 阅读 / 提醒）
+const LS_KEY = 'yxny-task-board-v3'
 
 function readStorage() {
   try {
@@ -23,7 +23,8 @@ export const useAppStore = defineStore('app', {
     progress: [],
     comments: [],
     attachments: [],
-    sources: []
+    sources: [],
+    documents: []
   }),
 
   getters: {
@@ -32,7 +33,10 @@ export const useAppStore = defineStore('app', {
     isLeader: (s) => s.users.find(u => u.id === s.currentUserId)?.role === 'leader',
     activeUsers: (s) => s.users.filter(u => u.active),
     activeSources: (s) => s.sources.filter(x => x.active),
-    activeTasks: (s) => s.tasks.filter(t => !t.deleted)
+    activeTasks: (s) => s.tasks.filter(t => !t.deleted),
+    /** 待我阅读的传阅文件 */
+    myUnreadDocs: (s) =>
+      s.documents.filter(d => (d.targetIds || []).includes(s.currentUserId) && !(d.readBy || []).some(r => r.userId === s.currentUserId))
   },
 
   actions: {
@@ -46,6 +50,7 @@ export const useAppStore = defineStore('app', {
       this.comments = data.comments || []
       this.attachments = data.attachments || []
       this.sources = data.sources || []
+      this.documents = data.documents || []
       this.currentUserId = saved ? (saved.currentUserId || null) : null
       this.inited = true
       if (!saved) this.persist()
@@ -60,7 +65,8 @@ export const useAppStore = defineStore('app', {
           progress: this.progress,
           comments: this.comments,
           attachments: this.attachments,
-          sources: this.sources
+          sources: this.sources,
+          documents: this.documents
         }))
       } catch (e) {
         console.warn('本地存储写入失败（可能超出容量限制）', e)
@@ -210,7 +216,8 @@ export const useAppStore = defineStore('app', {
         progress: this.progress,
         comments: this.comments,
         attachments: this.attachments,
-        sources: this.sources
+        sources: this.sources,
+        documents: this.documents
       }, null, 2)
     },
 
@@ -225,6 +232,7 @@ export const useAppStore = defineStore('app', {
       this.comments = data.comments || []
       this.attachments = data.attachments || []
       this.sources = data.sources || []
+      this.documents = data.documents || []
       this.currentUserId = null
       this.persist()
     },
@@ -237,8 +245,40 @@ export const useAppStore = defineStore('app', {
       this.comments = seed.comments
       this.attachments = seed.attachments
       this.sources = seed.sources
+      this.documents = seed.documents || []
       this.currentUserId = null
       this.persist()
+    },
+
+    // ---------- 文件传阅 ----------
+    /** 领导下发文件（指定阅读人） */
+    addDocument(payload) {
+      this.documents.push({
+        id: uid(),
+        title: payload.title,
+        note: payload.note || '',
+        targetIds: payload.targetIds || [],
+        dueDate: payload.dueDate || '',
+        fileName: payload.fileName,
+        fileSize: payload.fileSize,
+        fileType: payload.fileType,
+        dataUrl: payload.dataUrl,
+        issuerId: this.currentUserId,
+        readBy: [],
+        createdAt: new Date().toISOString()
+      })
+      this.persist()
+    },
+
+    /** 标记文件已读（本人） */
+    markDocRead(docId) {
+      const d = this.documents.find(x => x.id === docId)
+      if (!d) return
+      d.readBy = d.readBy || []
+      if (!d.readBy.some(r => r.userId === this.currentUserId)) {
+        d.readBy.push({ userId: this.currentUserId, at: new Date().toISOString() })
+        this.persist()
+      }
     },
 
     // ---------- Excel 导入（合并：同名任务更新，新任务添加） ----------

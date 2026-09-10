@@ -81,6 +81,7 @@
           <span>{{ t.source }}</span>
           <span>执行：{{ store.userName(t.executorId) }}</span>
           <span>负责：{{ store.userName(t.ownerId) }}</span>
+          <span v-if="attCount(t)">📎 {{ attCount(t) }}</span>
         </div>
         <div class="ratio-bar">
           <i :style="{ width: percentOf(t) + '%', background: isOverdue(t) ? '#d93026' : isExpiredNotStarted(t) ? '#b9bfcb' : '#2f6bff' }" />
@@ -217,6 +218,9 @@ const byPerson = computed(() =>
 
 function percentOf(t) {
   return latestProgressOf(store.progress, t.id)?.percent ?? 0
+}
+function attCount(t) {
+  return store.attachments.filter(a => a.taskId === t.id).length
 }
 function lastWeekOf(t) {
   const last = latestProgressOf(store.progress, t.id)

@@ -30,7 +30,7 @@
         </div>
         <div class="header-right">
           <el-tooltip content="每周一 09:00 领导提醒（正式版通过蓝信 / 邮件推送）" placement="bottom">
-            <el-badge :is-dot="store.isLeader" class="bell">
+            <el-badge :is-dot="store.isLeader || store.myUnreadDocs.length > 0" class="bell">
               <el-button text circle @click="onBell">
                 <el-icon :size="17"><Bell /></el-icon>
               </el-button>
@@ -79,7 +79,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
-import { ArrowDown, Bell, DataBoard, HomeFilled, List, Menu, Setting, TrendCharts } from '@element-plus/icons-vue'
+import { ArrowDown, Bell, DataBoard, Document, HomeFilled, List, Menu, Setting, TrendCharts } from '@element-plus/icons-vue'
 import { useAppStore } from '../stores/app'
 import { userTitle, nameColor, weekLabel } from '../utils/core'
 
@@ -106,6 +106,7 @@ const menuItems = computed(() => {
   const items = [
     { path: '/workbench', label: '我的工作台', icon: HomeFilled },
     { path: '/tasks', label: '任务列表', icon: List },
+    { path: '/files', label: '文件传阅', icon: Document },
     { path: '/board', label: '总览看板', icon: DataBoard },
     { path: '/report', label: '统计报表', icon: TrendCharts }
   ]
@@ -121,6 +122,11 @@ function onCmd(cmd) {
 }
 
 function onBell() {
+  if (store.myUnreadDocs.length) {
+    ElMessage({ type: 'warning', message: `您有 ${store.myUnreadDocs.length} 份文件待阅读，已为您打开「文件传阅」`, duration: 2500 })
+    router.push('/files')
+    return
+  }
   if (store.isLeader) {
     ElMessageBox.confirm(
       '演示：正式版会在每周一 09:00 通过蓝信 / 邮件向领导账号推送提醒，点击提醒直接进入总览看板。现在要打开看板吗？',
@@ -133,6 +139,17 @@ function onBell() {
 }
 
 onMounted(() => {
+  // 模拟：待阅读文件提醒（正式版由后端定时推送）
+  if (store.myUnreadDocs.length && !sessionStorage.getItem('docNotice')) {
+    sessionStorage.setItem('docNotice', '1')
+    ElNotification({
+      title: `您有 ${store.myUnreadDocs.length} 份文件待阅读`,
+      message: '点击打开「文件传阅」，阅读完成后可标记已读。',
+      type: 'warning',
+      duration: 6000,
+      onClick: () => router.push('/files')
+    })
+  }
   // 模拟：周一首次打开时为领导弹出提醒（正式版由后端定时推送）
   if (store.isLeader && new Date().getDay() === 1 && !sessionStorage.getItem('mondayNotice')) {
     sessionStorage.setItem('mondayNotice', '1')

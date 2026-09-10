@@ -47,7 +47,10 @@
         <el-table-column label="任务内容" min-width="240">
           <template #default="{ row }">
             <div class="ellipsis" style="font-weight: 500">{{ row.content }}</div>
-            <div class="fs12 muted">{{ row.source }}</div>
+            <div class="fs12 muted">
+              {{ row.source }}
+              <span v-if="attCount(row)"> · 📎 {{ attCount(row) }}</span>
+            </div>
           </template>
         </el-table-column>
         <el-table-column label="执行人" width="86">
@@ -153,6 +156,9 @@ function resetFilters() {
 
 function percentOf(t) {
   return latestProgressOf(store.progress, t.id)?.percent ?? 0
+}
+function attCount(t) {
+  return store.attachments.filter(a => a.taskId === t.id).length
 }
 function lastWeekOf(t) {
   const last = latestProgressOf(store.progress, t.id)

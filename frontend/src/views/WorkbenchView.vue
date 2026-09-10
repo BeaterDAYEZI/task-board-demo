@@ -11,6 +11,23 @@
       <div class="stat-card"><div class="num" :style="{ color: pending.length ? '#e8871e' : '#303133' }">{{ pending.length }}</div><div class="lbl">本周待填报</div></div>
     </div>
 
+    <div v-if="store.myUnreadDocs.length" class="card card-pad" style="margin-bottom: 16px; border-color: #f0c36d">
+      <div class="sec-head">
+        <span class="sec-title">📄 待阅读文件（{{ store.myUnreadDocs.length }}）</span>
+        <el-button text type="primary" size="small" @click="router.push('/files')">全部文件 →</el-button>
+      </div>
+      <div v-for="d in store.myUnreadDocs" :key="d.id" class="pending-item">
+        <div class="pi-main">
+          <div class="pi-title" @click="router.push('/files')">{{ d.title }}</div>
+          <div class="muted fs12">
+            下发：{{ store.userName(d.issuerId) }} · {{ (d.createdAt || '').slice(0, 10) }}
+            <span v-if="d.dueDate"> · 要求 {{ d.dueDate }} 前阅完</span>
+          </div>
+        </div>
+        <el-button size="small" type="warning" plain @click="router.push('/files')">去阅读</el-button>
+      </div>
+    </div>
+
     <div class="grid2">
       <div class="card card-pad">
         <div class="sec-head">
