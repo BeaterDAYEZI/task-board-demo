@@ -3,6 +3,7 @@ import { useAppStore } from '../stores/app'
 
 const routes = [
   { path: '/login', component: () => import('../views/LoginView.vue') },
+  { path: '/sso-callback', component: () => import('../views/SsoCallbackView.vue'), meta: { title: '单点登录' } },
   {
     path: '/',
     component: () => import('../layouts/MainLayout.vue'),
@@ -13,6 +14,7 @@ const routes = [
       { path: 'tasks/:id', component: () => import('../views/TaskDetailView.vue'), meta: { title: '任务详情' } },
       { path: 'files', component: () => import('../views/DocumentView.vue'), meta: { title: '文件传阅' } },
       { path: 'board', component: () => import('../views/BoardView.vue'), meta: { title: '总览看板' } },
+      { path: 'assistant', component: () => import('../views/AssistantView.vue'), meta: { title: '智能助手' } },
       { path: 'report', component: () => import('../views/ReportView.vue'), meta: { title: '统计报表' } },
       { path: 'settings', component: () => import('../views/SettingsView.vue'), meta: { title: '设置', admin: true } }
     ]
@@ -29,7 +31,7 @@ const router = createRouter({
 router.beforeEach((to) => {
   const store = useAppStore()
   store.init()
-  if (to.path === '/login') return true
+  if (to.path === '/login' || to.path === '/sso-callback') return true
   if (!store.currentUser) return '/login'
   if (to.meta.admin && !store.isAdmin) return '/workbench'
   return true

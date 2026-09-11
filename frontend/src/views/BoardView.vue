@@ -5,20 +5,38 @@
         <h2 class="page-title">总览看板</h2>
         <p class="page-sub">{{ weekText }} ｜ 点击卡片或行可查看任务详情（关联任务内容与周进度记录）</p>
       </div>
-      <div>
+      <div class="head-actions">
+        <el-button type="primary" @click="router.push('/assistant')">
+          <el-icon style="margin-right: 4px"><MagicStick /></el-icon>智能问数
+        </el-button>
         <el-button @click="onExport">导出 Excel</el-button>
       </div>
     </div>
 
-    <div class="stat-grid">
-      <div class="stat-card"><div class="num">{{ store.activeTasks.length }}</div><div class="lbl">任务总数</div></div>
-      <div class="stat-card"><div class="num" style="color: #2f6bff">{{ doingCount }}</div><div class="lbl">进行中</div></div>
-      <div class="stat-card"><div class="num" style="color: #2bb673">{{ doneCount }}</div><div class="lbl">已完成</div></div>
-      <div class="stat-card"><div class="num" :style="{ color: overdueCount ? '#d93026' : '#303133' }">{{ overdueCount }}</div><div class="lbl">逾期未完成</div></div>
-      <div class="stat-card"><div class="num" :style="{ color: expiredCount ? '#8a919f' : '#303133' }">{{ expiredCount }}</div><div class="lbl">未启动 · 已过期</div></div>
-      <div class="stat-card">
-        <div class="num" :style="{ color: fillRate >= 100 ? '#2bb673' : '#e8871e' }">{{ fillRate }}%</div>
-        <div class="lbl">本周填报率（{{ filledCount }}/{{ reportableCount }}）</div>
+    <div class="hero-band">
+      <div class="hero-ring-box">
+        <VChart :option="heroRing" :height="158" />
+      </div>
+      <div class="hero-kpis">
+        <div v-for="k in heroKpis" :key="k.label" class="kpi">
+          <div class="kpi-num" :style="{ color: k.color }">{{ k.value }}</div>
+          <div class="kpi-lbl">{{ k.label }}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-grid">
+      <div class="card card-pad">
+        <div class="chart-title">任务状态分布</div>
+        <VChart :option="statusPieOption" :height="238" />
+      </div>
+      <div class="card card-pad">
+        <div class="chart-title">优先级分布</div>
+        <VChart :option="priorityBarOption" :height="238" />
+      </div>
+      <div class="card card-pad">
+        <div class="chart-title">近 8 周新增 / 填报趋势</div>
+        <VChart :option="trendOption" :height="238" />
       </div>
     </div>
 
@@ -159,6 +177,9 @@ import {
   isOverdue, isExpiredNotStarted, isNearDue, latestProgressOf, sortTasks, weekKey, weekLabel, weekShort
 } from '../utils/core'
 import { exportTasksWorkbook } from '../utils/excel'
+import VChart from '../components/VChart.vue'
+import { statusPie, multiLine } from '../utils/qa'
+import { MagicStick } from '@element-plus/icons-vue'
 
 const store = useAppStore()
 const router = useRouter()
@@ -202,6 +223,69 @@ const filledCount = computed(() => {
     .filter(t => store.progress.some(p => p.taskId === t.id && p.weekKey === k)).length
 })
 const fillRate = computed(() => (reportableCount.value ? Math.round((filledCount.value / reportableCount.value) * 100) : 100))
+
+// ---------- 大屏：完成率环 + KPI ----------
+const doneRate = computed(() => (store.activeTasks.length ? Math.round((doneCount.value / store.activeTasks.length) * 100) : 0))
+const heroRing = computed(() => ({
+  series: [{
+    type: 'pie',
+    radius: ['66%', '84%'],
+    silent: true,
+    label: { show: false },
+    data: [
+      { value: doneRate.value, itemStyle: { color: '#6ee7a8' } },
+      { value: Math.max(0.0001, 100 - doneRate.value), itemStyle: { color: 'rgba(255,255,255,.16)' } }
+    ]
+  }],
+  title: {
+    text: doneRate.value + '%',
+    subtext: '整体完成率',
+    left: 'center',
+    top: '40%',
+    textStyle: { color: '#fff', fontSize: 26, fontWeight: 700 },
+    subtextStyle: { color: 'rgba(255,255,255,.72)', fontSize: 12 }
+  }
+}))
+const heroKpis = computed(() => [
+  { label: '任务总数', value: store.activeTasks.length, color: '#ffffff' },
+  { label: '进行中', value: doingCount.value, color: '#8ab6ff' },
+  { label: '已完成', value: doneCount.value, color: '#6ee7a8' },
+  { label: '逾期未完成', value: overdueCount.value, color: '#ff9d94' },
+  { label: '未启动 · 已过期', value: expiredCount.value, color: '#cdd6e8' },
+  { label: '本周填报率', value: fillRate.value + '%', color: '#ffd66e' }
+])
+
+// ---------- 图表 ----------
+const statusPieOption = computed(() => statusPie(store.activeTasks))
+const priorityBarOption = computed(() => {
+  const labels = PRIORITIES.map(p => p.label).reverse()
+  const data = PRIORITIES.map(p => ({
+    value: store.activeTasks.filter(t => t.priority === p.value).length,
+    itemStyle: { color: p.color, borderRadius: [0, 7, 7, 0] }
+  })).reverse()
+  return {
+    grid: { left: 8, right: 34, top: 8, bottom: 4, containLabel: true },
+    tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+    xAxis: { type: 'value', minInterval: 1, splitLine: { lineStyle: { color: '#eef1f6' } } },
+    yAxis: { type: 'category', data: labels, axisTick: { show: false }, axisLine: { show: false } },
+    series: [{ type: 'bar', barWidth: 13, data, label: { show: true, position: 'right', fontSize: 11, color: '#5b6472' } }]
+  }
+})
+const trendOption = computed(() => {
+  const weeks = []
+  const now = new Date()
+  for (let i = 7; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i * 7)
+    const k = weekKey(d)
+    weeks.push({ key: k, label: weekShort(k) })
+  }
+  const newTasks = weeks.map(w => store.activeTasks.filter(t => t.startDate && weekKey(new Date(t.startDate)) === w.key).length)
+  const fills = weeks.map(w => store.progress.filter(p => p.weekKey === w.key).length)
+  return multiLine(weeks.map(w => w.label), [
+    { name: '新增任务', data: newTasks, color: '#2f6bff' },
+    { name: '填报次数', data: fills, color: '#2bb673' }
+  ])
+})
 
 const byPerson = computed(() =>
   store.activeUsers
@@ -272,4 +356,28 @@ function onExport() {
 .pg-item:last-child { border-bottom: none; }
 .pg-item:hover { background: #f8faff; }
 .pg-title { flex: 1; min-width: 0; font-size: 13px; }
+
+.head-actions { display: flex; gap: 10px; }
+.hero-band {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  background: linear-gradient(135deg, #1f2f66 0%, #2f6bff 78%, #4f86ff 100%);
+  border-radius: 14px;
+  padding: 16px 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 10px 26px rgba(47, 107, 255, 0.28);
+  flex-wrap: wrap;
+}
+.hero-ring-box { width: 168px; flex: none; }
+.hero-kpis { flex: 1; display: grid; grid-template-columns: repeat(6, minmax(90px, 1fr)); gap: 8px 6px; }
+.kpi { text-align: center; padding: 8px 2px; border-radius: 10px; background: rgba(255, 255, 255, 0.06); }
+.kpi-num { font-size: 26px; font-weight: 700; line-height: 1.15; font-variant-numeric: tabular-nums; }
+.kpi-lbl { font-size: 12px; color: rgba(255, 255, 255, 0.72); margin-top: 4px; }
+.chart-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 16px; }
+.chart-title { font-weight: 600; font-size: 14px; margin-bottom: 6px; }
+@media (max-width: 1100px) {
+  .hero-kpis { grid-template-columns: repeat(3, 1fr); }
+  .chart-grid { grid-template-columns: 1fr; }
+}
 </style>

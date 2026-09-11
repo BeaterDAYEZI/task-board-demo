@@ -10,8 +10,18 @@
       </div>
 
       <el-alert type="info" :closable="false" show-icon>
-        <template #title>演示版：点选身份即可进入；正式版将使用账号登录并接入公司统一账号单点登录</template>
+        <template #title>演示版：点选身份即可进入；也可体验「公司统一账号单点登录」流程（当前为演示模式）</template>
       </el-alert>
+
+      <div class="sso-row">
+        <el-button type="primary" size="large" @click="onSso">
+          <el-icon style="margin-right: 6px"><OfficeBuilding /></el-icon>公司统一账号单点登录
+        </el-button>
+        <el-tag size="small" effect="plain" :type="ssoReady ? 'success' : 'info'">
+          {{ ssoReady ? '已配置 · 跳转E办授权页' : '演示模式 · 模拟授权流程' }}
+        </el-tag>
+      </div>
+      <el-divider><span class="fs12 muted">或选择演示身份（点选即进入）</span></el-divider>
 
       <div class="user-grid">
         <div v-for="u in store.activeUsers" :key="u.id" class="user-tile" @click="enter(u)">
@@ -29,21 +39,62 @@
       <div class="login-foot fs12 muted">
         领导账号登录后默认进入「总览看板」；演示数据保存在浏览器本地，可在「设置 → 数据管理」中重置
       </div>
+
+      <el-dialog v-model="ssoDemo" title="公司统一账号单点登录（演示模式）" width="480px">
+        <p class="fs12 muted" style="line-height: 1.8; margin-bottom: 12px">
+          正式环境将自动跳转到公司统一账号授权页：在E办完成身份认证后免密回到本系统（OAuth2 授权码模式）。
+          当前未配置 E办 接入参数（可在「设置 → 单点登录」中配置），这里模拟一次「授权回调」，请选择要模拟登录的E办身份：
+        </p>
+        <el-select v-model="mockUid" style="width: 100%" placeholder="选择身份">
+          <el-option
+            v-for="u in store.activeUsers"
+            :key="u.id"
+            :label="`${u.name}（${u.title || ROLE_LABEL[u.role]}${u.account ? ' · ' + u.account : ''}）`"
+            :value="u.id"
+          />
+        </el-select>
+        <template #footer>
+          <el-button @click="ssoDemo = false">取消</el-button>
+          <el-button type="primary" @click="simulateSso">模拟授权并登录</el-button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { OfficeBuilding } from '@element-plus/icons-vue'
 import { useAppStore } from '../stores/app'
 import { ROLE_LABEL, nameColor } from '../utils/core'
+import { beginSsoLogin, isSsoConfigured } from '../utils/sso'
 
 const store = useAppStore()
 const router = useRouter()
 
+const ssoReady = isSsoConfigured()
+const ssoDemo = ref(false)
+const mockUid = ref('')
+
 function enter(u) {
   store.login(u.id)
   router.replace(u.role === 'leader' ? '/board' : '/workbench')
+}
+
+function onSso() {
+  if (ssoReady) {
+    beginSsoLogin()
+    return
+  }
+  mockUid.value = store.activeUsers[0]?.id || ''
+  ssoDemo.value = true
+}
+
+function simulateSso() {
+  if (!mockUid.value) return
+  ssoDemo.value = false
+  router.push(`/sso-callback?code=mock:${mockUid.value}`)
 }
 </script>
 
@@ -60,4 +111,6 @@ h1 { font-size: 20px; margin: 0; }
 .ut-info { flex: 1; min-width: 0; }
 .ut-name { font-weight: 600; font-size: 14px; }
 .login-foot { margin-top: 6px; line-height: 1.6; }
+.sso-row { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+:deep(.el-divider__text) { background: #fff; }
 </style>

@@ -108,6 +108,40 @@
             <el-button type="danger" plain @click="reset">重置演示数据</el-button>
           </div>
         </el-tab-pane>
+
+        <el-tab-pane label="单点登录" name="sso">
+          <el-alert type="info" :closable="false" show-icon style="margin-bottom: 14px; max-width: 860px">
+            <template #title>
+              公司统一账号单点登录（OAuth2 授权码模式）：配置好后，登录页「公司统一账号单点登录」按钮将跳转 E办 授权页，认证完成免密回到本系统。
+              演示版参数保存在本机浏览器；正式版请由后端保管密钥并完成「code → 用户信息」交换（详见 docs/SSO接入说明.md）。
+            </template>
+          </el-alert>
+          <el-form :model="ssoForm" label-width="140px" style="max-width: 660px">
+            <el-form-item label="授权地址 authUrl">
+              <el-input v-model="ssoForm.authUrl" placeholder="https://sso.example.com/oauth2/authorize" />
+            </el-form-item>
+            <el-form-item label="应用 ID clientId">
+              <el-input v-model="ssoForm.clientId" placeholder="由 E办 开放平台分配" />
+            </el-form-item>
+            <el-form-item label="用户信息接口">
+              <el-input v-model="ssoForm.userInfoUrl" placeholder="后端接口，如 /api/sso/userinfo（用 code 换取用户信息）" />
+            </el-form-item>
+            <el-form-item label="回调地址">
+              <el-input v-model="ssoForm.redirectUri" />
+            </el-form-item>
+            <el-form-item label="账号字段名">
+              <el-input v-model="ssoForm.accountField" placeholder="用户信息接口返回的账号字段（默认 account）" />
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" @click="saveSso">保存配置</el-button>
+              <el-button @click="resetSso">清除本地配置</el-button>
+              <el-button :disabled="!ssoConfigured" @click="testSso">测试跳转</el-button>
+            </el-form-item>
+          </el-form>
+          <div class="fs12 muted">
+            当前状态：{{ ssoConfigured ? '已配置（登录页将跳转真实授权页）' : '演示模式（登录页模拟授权回调）' }}
+          </div>
+        </el-tab-pane>
       </el-tabs>
     </div>
 
@@ -137,12 +171,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useAppStore } from '../stores/app'
 import { ROLE_LABEL } from '../utils/core'
 import { parseTaskWorkbook } from '../utils/importer'
+import { beginSsoLogin, clearSsoConfig, isSsoConfigured, loadSsoConfig, saveSsoConfig } from '../utils/sso'
 
 const store = useAppStore()
 const router = useRouter()
@@ -270,5 +305,25 @@ function reset() {
       router.replace('/login')
     })
     .catch(() => {})
+}
+
+// ---------- 单点登录（公司统一账号） ----------
+const ssoForm = ref(loadSsoConfig())
+const ssoConfigured = computed(() => isSsoConfigured(ssoForm.value))
+
+function saveSso() {
+  saveSsoConfig({ ...ssoForm.value })
+  ssoForm.value = loadSsoConfig()
+  ElMessage.success('已保存（仅本机浏览器生效）')
+}
+
+function resetSso() {
+  clearSsoConfig()
+  ssoForm.value = loadSsoConfig()
+  ElMessage.success('已清除本地配置')
+}
+
+function testSso() {
+  if (!beginSsoLogin(ssoForm.value)) ElMessage.warning('请先填写授权地址与应用 ID')
 }
 </script>

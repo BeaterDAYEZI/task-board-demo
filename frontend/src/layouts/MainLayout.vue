@@ -79,7 +79,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox, ElNotification } from 'element-plus'
-import { ArrowDown, Bell, DataBoard, Document, HomeFilled, List, Menu, Setting, TrendCharts } from '@element-plus/icons-vue'
+import { ArrowDown, Bell, ChatDotRound, DataBoard, Document, HomeFilled, List, Menu, Setting, TrendCharts } from '@element-plus/icons-vue'
 import { useAppStore } from '../stores/app'
 import { userTitle, nameColor, weekLabel } from '../utils/core'
 
@@ -108,6 +108,7 @@ const menuItems = computed(() => {
     { path: '/tasks', label: '任务列表', icon: List },
     { path: '/files', label: '文件传阅', icon: Document },
     { path: '/board', label: '总览看板', icon: DataBoard },
+    { path: '/assistant', label: '智能助手', icon: ChatDotRound },
     { path: '/report', label: '统计报表', icon: TrendCharts }
   ]
   if (store.isAdmin) items.push({ path: '/settings', label: '设置', icon: Setting })
